@@ -1,8 +1,15 @@
 import { generateWithRetry, getLanguageInstruction } from "./ai";
 import { EN } from "../localization/en";
 import { deriveArchetype } from "../data/archetypes";
+import { fallbackEndings } from "../data/fallbackEndings";
+import { fallbackEndingsBN } from "../data/fallbackEndingsBN";
 
 export async function generateEndings(history, profile, reasonings, avgDecisionTime, language = "en") {
+  const key = import.meta.env.VITE_OPENROUTER_API_KEY;
+  if (!key || key === "your_openrouter_api_key_here") {
+    throw new Error("API key not configured");
+  }
+
   const languageInstruction = getLanguageInstruction(language);
   const historyJson = JSON.stringify(history, null, 2);
   
@@ -14,7 +21,8 @@ export async function generateEndings(history, profile, reasonings, avgDecisionT
       ? reasonings.map((r, i) => `Case ${i + 1}: "${r}"`).join("\n")
       : "none provided";
 
-  return generateWithRetry(() => `${languageInstruction}
+  try {
+    return await generateWithRetry(() => `${languageInstruction}
 
 You are writing the endings for The Tribunal. Elias Voss has been judged 10 times.
 
@@ -62,4 +70,8 @@ Return ONLY this JSON:
   "archetype_label": "archetype name in the specified language",
   "archetype_description": "2 sentences describing this judge type in the specified language"
 }`);
+  } catch (error) {
+    console.warn("[The Tribunal] AI ending generation failed, using fallback endings:", error.message);
+    return language === "bn" ? fallbackEndingsBN : fallbackEndings;
+  }
 }

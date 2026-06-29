@@ -1,8 +1,11 @@
 import { useLanguage } from "../context/LanguageContext";
 
-export default function IntroScreen({ onStart }) {
+export default function IntroScreen({ onStart, totalCases }) {
   const { language, t } = useLanguage();
   const langClass = language === "bn" ? "lang-bn" : "";
+  const count = String(totalCases);
+  const subtitle = t.intro.subtitle.replace("{count}", count);
+  const caseCountStr = t.intro.caseCount.replace("{count}", count);
 
   return (
     <div className={`mx-auto max-w-[680px] px-5 py-12 ${langClass}`}>
@@ -13,6 +16,9 @@ export default function IntroScreen({ onStart }) {
         <p className="mt-3 text-sm uppercase tracking-[0.25em] text-[#4A6741]">
           {t.intro.tagline}
         </p>
+        <p className="mt-4 text-xs tracking-wide text-[#4A6741]">
+          {caseCountStr}
+        </p>
       </header>
 
       <div className="rounded border border-[#D4E0D4] bg-white p-6 md:p-8 shadow-sm">
@@ -20,7 +26,7 @@ export default function IntroScreen({ onStart }) {
           {t.intro.eliasIntro}
         </h2>
         <div className="case-body space-y-4 text-[#1A2E1A]">
-          <p>{t.intro.subtitle}</p>
+          <p>{subtitle}</p>
           <p>{t.intro.eliasBackstory}</p>
           <p>{t.intro.disclaimer}</p>
         </div>

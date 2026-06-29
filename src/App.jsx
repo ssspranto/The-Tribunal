@@ -8,7 +8,7 @@ import EndingScreen from "./components/EndingScreen";
 import EliasAvatar from "./components/EliasAvatar";
 import LanguageSelectScreen from "./components/LanguageSelectScreen";
 import { useLanguage } from "./context/LanguageContext";
-import { useGameState, buildHistory } from "./hooks/useGameState";
+import { useGameState, buildHistory, getSpeedrunCase } from "./hooks/useGameState";
 import {
   getAvatarExpression,
   getTimePassage,
@@ -106,6 +106,7 @@ export default function App() {
     addFinalCases,
     setPhase,
     setEndings,
+    setSpeedrunMode,
   } = useGameState();
 
   const getScenarioBank = useCallback((lang) => 
@@ -167,7 +168,13 @@ export default function App() {
       state.verdicts.slice(0, judgedNumber)
     );
 
-    if (judgedNumber === 10) {
+    if (judgedNumber < state.cases.length) {
+      advanceAfterTransition();
+      return;
+    }
+
+    const hasAICases = state.cases.some((c) => c.case_number >= 9);
+    if (hasAICases) {
       runApiAction(async () => {
         await new Promise((r) => setTimeout(r, 3000));
         const reasonings = state.verdicts
@@ -189,7 +196,9 @@ export default function App() {
       return;
     }
 
-    if (judgedNumber === 8) {
+    const nextCaseNumber = judgedNumber + 1;
+
+    if (nextCaseNumber >= 9) {
       runApiAction(async () => {
         const result = await generateFinalCases(
           buildHistory(state.cases, state.verdicts),
@@ -201,13 +210,13 @@ export default function App() {
       return;
     }
 
-    if (judgedNumber === 9) {
-      advanceAfterTransition();
+    if (state.speedrunMode && nextCaseNumber === 2) {
+      const speedrunCaseData = getSpeedrunCase(language);
+      addCase(speedrunCaseData);
       return;
     }
 
-    const nextCaseNumber = judgedNumber + 1;
-    if (nextCaseNumber <= 8) {
+    if (!state.speedrunMode && nextCaseNumber <= 8) {
       const caseData = getNextCase(
         nextCaseNumber,
         lastVerdict.verdict,
@@ -234,7 +243,7 @@ export default function App() {
     setEndings,
     getScenarioBank,
     language,
-    getNextCase
+    getNextCase,
   ]);
 
   const handleRetry = () => {
@@ -256,6 +265,7 @@ export default function App() {
 
   const currentCase = state.cases[state.currentCaseIndex];
   const caseNumber = state.currentCaseIndex + 1;
+  const totalCases = state.speedrunMode ? 4 : 10;
   const avatarExpression = getAvatarExpression(
     caseNumber,
     state.profile.leniency_score
@@ -264,7 +274,11 @@ export default function App() {
   return (
     <div className={`min-h-screen bg-[#F5F7F5] text-[#1A2E1A] ${language === "bn" ? "lang-bn" : ""}`}>
       {state.phase === "language_select" && (
-        <LanguageSelectScreen onSelect={(lang) => selectLanguage(lang)} />
+        <LanguageSelectScreen
+          onSelect={(lang) => selectLanguage(lang)}
+          speedrunMode={state.speedrunMode}
+          onToggleSpeedrun={setSpeedrunMode}
+        />
       )}
 
       {state.phase === "save_prompt" && (
@@ -275,7 +289,7 @@ export default function App() {
       )}
 
       {state.phase === "intro" && (
-        <IntroScreen onStart={startSession} />
+        <IntroScreen onStart={startSession} totalCases={totalCases} />
       )}
 
       {state.phase === "case" && currentCase && (
@@ -287,7 +301,7 @@ export default function App() {
             />
           </div>
           <div className="sm:pr-28">
-            <CaseCard caseData={currentCase} caseNumber={caseNumber} />
+            <CaseCard caseData={currentCase} caseNumber={caseNumber} totalCases={totalCases} />
             <VerdictPanel onSubmit={submitVerdict} disabled={false} />
           </div>
         </div>

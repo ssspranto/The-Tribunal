@@ -1,9 +1,16 @@
 import { generateWithRetry, getLanguageInstruction } from "./ai";
+import { fallbackCases } from "../data/fallbackCases";
+import { fallbackCasesBN } from "../data/fallbackCasesBN";
 
 export async function generateFinalCases(history, profile, language = "en") {
+  const key = import.meta.env.VITE_OPENROUTER_API_KEY;
+  if (!key || key === "your_openrouter_api_key_here") {
+    throw new Error("API key not configured");
+  }
+
   const languageInstruction = getLanguageInstruction(language);
+  const caseCount = history.length;
   const storyNarrative = history
-    .slice(0, 8)
     .map(
       (entry, i) => `Case ${i + 1} — ${entry.case_title}
 Crime: ${entry.case_body}
@@ -15,9 +22,12 @@ Judge's reasoning: ${entry.reasoning || "none given"}
     )
     .join("\n");
 
-  return generateWithRetry(() => `${languageInstruction}
+  try {
+    return await generateWithRetry(() => `${languageInstruction}
 
-You are generating the two final and hardest cases for The Tribunal. Elias Voss has appeared before this judge 8 times.
+You are generating the two final and hardest cases for The Tribunal. Elias Voss has appeared before this judge ${caseCount} times.
+
+${caseCount < 8 ? "Note: the judge has only seen a handful of cases so far — do not reference cases that do not exist in the history below. The cases you generate must feel like a dramatic escalation from whatever exists in the record, even if the record is short." : ""}
 
 Here is the complete story of Elias Voss as it unfolded in this session:
 ${storyNarrative}
@@ -57,4 +67,8 @@ Return ONLY this JSON:
     "signal_weights": { "framework": 0.1, "leniency": -0.2, "empathy": 0.3 }
   }
 }`);
+  } catch (error) {
+    console.warn("[The Tribunal] AI case generation failed, using fallback cases:", error.message);
+    return language === "bn" ? fallbackCasesBN : fallbackCases;
+  }
 }

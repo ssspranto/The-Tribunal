@@ -1,13 +1,13 @@
 import { useLanguage } from "../context/LanguageContext";
 
-export default function CaseCard({ caseData, caseNumber }) {
+export default function CaseCard({ caseData, caseNumber, totalCases }) {
   const { language, t } = useLanguage();
   const langClass = language === "bn" ? "lang-bn" : "";
 
   return (
     <div className={`space-y-6 ${langClass}`}>
       <p className="text-sm tracking-wide text-[#4A6741]">
-        {t.game.caseLabel} {caseNumber} {t.game.of} 10
+        {t.game.caseLabel} {caseNumber} {t.game.of} {totalCases}
       </p>
 
       {caseData.bridge_narrative && (

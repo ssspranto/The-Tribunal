@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { case1 } from "../data/case1";
 import { case1BN } from "../data/case1BN";
+import { caseSpeedrun } from "../data/caseSpeedrun";
+import { caseSpeedrunBN } from "../data/caseSpeedrunBN";
 import { SCENARIO_BANKS } from "../data/scenarioBanks";
 import { SCENARIO_BANKS_BN } from "../data/scenarioBanksBN";
 import {
@@ -10,6 +12,18 @@ import {
 } from "./useProfileTracker";
 
 const STORAGE_KEY = "tribunal_game_state";
+
+function speedrunFromEnv() {
+  try {
+    return import.meta.env.VITE_SPEEDRUN_MODE === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function getSpeedrunCase(language) {
+  return language === "bn" ? caseSpeedrunBN : caseSpeedrun;
+}
 
 export function buildHistory(cases, verdicts) {
   return cases.map((c, i) => ({
@@ -35,6 +49,7 @@ function createFreshState() {
     endings: null,
     caseStartTime: null,
     pendingFinalCases: null,
+    speedrunMode: speedrunFromEnv(),
   };
 }
 
@@ -60,6 +75,7 @@ function persist(state) {
     pendingFinalCases: state.pendingFinalCases,
     lastReaction: state.lastReaction,
     transitionCaseNumber: state.transitionCaseNumber,
+    speedrunMode: state.speedrunMode,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
 }
@@ -245,6 +261,16 @@ export function useGameState() {
     [saveState]
   );
 
+  const setSpeedrunMode = useCallback(
+    (enabled) => {
+      saveState((prev) => ({
+        ...prev,
+        speedrunMode: enabled,
+      }));
+    },
+    [saveState]
+  );
+
   return {
     state,
     hasSave,
@@ -260,6 +286,7 @@ export function useGameState() {
     setPhase,
     setEndings,
     storePendingFinalCases,
+    setSpeedrunMode,
     showSavePrompt: () => saveState((prev) => ({ ...prev, phase: "save_prompt" })),
   };
 }

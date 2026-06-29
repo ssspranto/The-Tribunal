@@ -3,10 +3,10 @@ export const EN = {
   intro: {
     title: "The Tribunal",
     tagline: "A narrative of judgment",
-    subtitle: "You will judge 10 cases. Each ruling is recorded. At the end, the AI reveals your moral framework — and uses it against you.",
+    subtitle: "You will judge {count} cases. Each ruling is recorded. At the end, the AI reveals your moral framework — and uses it against you.",
     disclaimer: "There are no right answers. The AI is not judging your morality — it is mapping your decision logic to reveal your hidden patterns.",
     beginButton: "Begin",
-    caseCount: "10 cases · ~15 minutes · AI-generated ending",
+    caseCount: "{count} cases · ~15 minutes · AI-generated ending",
     eliasIntro: "Before the court begins, you should know who stands before you.",
     eliasBackstory: "Elias Voss is 34 years old. He works at a warehouse. His daughter Maya, age 11, has a chronic illness that their insurance provider has repeatedly denied coverage for. He has no prior criminal record. He is not a bad man. He is a man out of options.",
     continueButton: "Court is now in session"

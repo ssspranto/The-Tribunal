@@ -1,7 +1,7 @@
 import { useLanguage } from "../context/LanguageContext";
 import { LANGUAGES } from "../localization";
 
-export default function LanguageSelectScreen({ onSelect }) {
+export default function LanguageSelectScreen({ onSelect, speedrunMode, onToggleSpeedrun }) {
   const { language: currentLang, changeLanguage } = useLanguage();
 
   const handleSelect = (code) => {
@@ -60,6 +60,27 @@ export default function LanguageSelectScreen({ onSelect }) {
             </div>
           </button>
         ))}
+      </div>
+
+      <div className="mt-8 flex items-center gap-3">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={speedrunMode}
+          onClick={() => onToggleSpeedrun(!speedrunMode)}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+            speedrunMode ? "bg-[#2D6A4F]" : "bg-[#D4E0D4]"
+          }`}
+        >
+          <span
+            className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+              speedrunMode ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
+        </button>
+        <span className="text-sm text-[#4A6741]">
+          Speedrun Mode
+        </span>
       </div>
 
       <footer className="mt-16 space-y-1 text-center text-sm text-[#4A6741]/80">
