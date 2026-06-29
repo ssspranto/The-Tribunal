@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@theme {
+  --font-heading: "Playfair Display", Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  background-color: #F5F7F5;
+  color: #1A2E1A;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+:lang(bn), .lang-bn {
+  font-family: 'Hind Siliguri', sans-serif !important;
+}
+
+:lang(bn) h1, :lang(bn) h2, :lang(bn) h3, :lang(bn) .font-heading,
+.lang-bn h1, .lang-bn h2, .lang-bn h3, .lang-bn .font-heading {
+  font-family: 'Hind Siliguri', sans-serif !important;
+  font-weight: 600;
+}
+
+.case-body {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.severity-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #2D6A4F, #52B788);
+  outline: none;
+}
+
+.severity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2px solid #2D6A4F;
+  cursor: pointer;
+}
+
+.severity-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2px solid #2D6A4F;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 800ms ease-out forwards;
+}
+
+.fade-in-hidden {
+  opacity: 0;
+}
