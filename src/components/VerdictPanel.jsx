@@ -1,7 +1,30 @@
 import { useState } from "react";
 import { useLanguage } from "../context/LanguageContext";
 
-export default function VerdictPanel({ onSubmit, disabled }) {
+function GavelIcon() {
+  return (
+    <svg className="mr-2 inline-block h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="10" x2="4" y2="18" />
+      <line x1="8" y1="14" x2="16" y2="6" />
+      <rect x="10" y="3" width="4" height="6" rx="1" />
+    </svg>
+  );
+}
+
+function ScalesIcon() {
+  return (
+    <svg className="mr-2 inline-block h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="4" x2="12" y2="20" />
+      <line x1="4" y1="8" x2="20" y2="8" />
+      <path d="M4 8 L2 12 L6 12 Z" />
+      <line x1="4" y1="12" x2="4" y2="20" />
+      <path d="M20 8 L18 12 L22 12 Z" />
+      <line x1="20" y1="12" x2="20" y2="20" />
+    </svg>
+  );
+}
+
+export default function VerdictPanel({ onSubmit, disabled, expertRecommendation }) {
   const { language, t } = useLanguage();
   const [verdict, setVerdict] = useState(null);
   const [severity, setSeverity] = useState(5);
@@ -25,6 +48,13 @@ export default function VerdictPanel({ onSubmit, disabled }) {
         {t.game.verdictTitle}
       </h3>
 
+      {expertRecommendation && (
+        <div className="rounded border border-[#C4943A]/30 bg-[#C4943A]/5 px-4 py-3 text-sm">
+          <span className="font-medium text-[#C4943A]">{t.game.expertLabel}: </span>
+          <span className="text-[#4A6741]">{expertRecommendation}</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <button
           type="button"
@@ -36,6 +66,7 @@ export default function VerdictPanel({ onSubmit, disabled }) {
               : "border-[#D4E0D4] bg-white text-[#4A6741] hover:border-[#B91810]/50"
           }`}
         >
+          <GavelIcon />
           {t.game.guiltyButton}
         </button>
         <button
@@ -48,6 +79,7 @@ export default function VerdictPanel({ onSubmit, disabled }) {
               : "border-[#D4E0D4] bg-white text-[#4A6741] hover:border-[#2D6A4F]/50"
           }`}
         >
+          <ScalesIcon />
           {t.game.notGuiltyButton}
         </button>
       </div>

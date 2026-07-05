@@ -1,7 +1,25 @@
 import { useState, useEffect, useMemo } from "react";
 import EliasAvatar from "./EliasAvatar";
 import { useLanguage } from "../context/LanguageContext";
-import { deriveArchetype } from "../data/archetypes";
+
+function StatGauge({ label, value, delay }) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-sm text-[#4A6741]">{label}</span>
+        <span className="text-sm font-medium text-[#1A2E1A]">
+          {(Math.round(value * 100))}%
+        </span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-[#D4E0D4]">
+        <div
+          className="gauge-fill h-full rounded-full bg-[#2D6A4F]"
+          style={{ width: `${Math.round(value * 100)}%`, animationDelay: `${delay}ms` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 function AnimatedParagraphs({ paragraphs, tag, tagLabel, side }) {
   const { language } = useLanguage();
@@ -41,18 +59,62 @@ function AnimatedParagraphs({ paragraphs, tag, tagLabel, side }) {
   );
 }
 
+function ExpertTraceSection({ trace }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!trace || trace.length === 0) return null;
+
+  return (
+    <div className="mt-16 rounded border border-[#C4943A]/30 bg-white p-6 md:p-8 shadow-sm">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between text-left"
+      >
+        <h3 className="font-heading text-xl text-[#C4943A]">
+          Expert System Judgment Analysis
+        </h3>
+        <span className="text-sm text-[#4A6741]">
+          {expanded ? "▲" : "▼"}
+        </span>
+      </button>
+      <p className="mb-4 mt-2 text-xs italic text-[#4A6741]">
+        A forward-chaining production rule engine determined these outcomes based on your {trace.length} fired rules.
+      </p>
+      {expanded && (
+        <div className="space-y-3 border-t border-[#D4E0D4] pt-4">
+          {trace.map((entry, i) => (
+            <div key={i} className="rounded border border-[#D4E0D4]/50 bg-[#F5F7F5] p-3 text-sm">
+              <div className="mb-1 flex items-center gap-2">
+                <span className="rounded bg-[#C4943A]/10 px-2 py-0.5 text-xs font-medium text-[#C4943A]">
+                  {entry.ruleId}
+                </span>
+                <span className="text-xs uppercase tracking-wider text-[#4A6741]">
+                  {entry.category}
+                </span>
+              </div>
+              <p className="font-medium text-[#1A2E1A]">{entry.description}</p>
+              <p className="mt-1 text-[#4A6741]">{entry.explanation}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function EndingScreen({
   endings,
   profile,
   cases,
   verdicts,
+  expertTrace,
   onRestart,
 }) {
   const { language, t } = useLanguage();
   
-  const fallbackArchetype = useMemo(() => deriveArchetype(profile, t), [profile, t]);
-  const archetypeLabel = endings.archetype_label || fallbackArchetype.label;
-  const archetypeDescription = endings.archetype_description || fallbackArchetype.description;
+  const archetypeLabel = endings.archetype_label;
+  const archetypeDescription = endings.archetype_description;
 
   const avgTime =
     verdicts.reduce((sum, v) => sum + (v.timeTaken ?? 0), 0) /
@@ -98,7 +160,9 @@ export default function EndingScreen({
         />
       </div>
 
-      <div className="mt-16 rounded border border-[#D4E0D4] bg-white p-6 md:p-8 shadow-sm">
+      <ExpertTraceSection trace={expertTrace} />
+
+      <div className="mt-8 rounded border border-[#D4E0D4] bg-white p-6 md:p-8 shadow-sm">
         <h3 className="font-heading mb-2 text-xl text-[#2D6A4F]">
           {archetypeLabel}
         </h3>
@@ -106,31 +170,11 @@ export default function EndingScreen({
           {archetypeDescription}
         </p>
 
-        <div className="mb-6 grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
-          <div>
-            <span className="text-[#4A6741]">{t.ending.framework}</span>
-            <p className="text-[#1A2E1A]">
-              {(profile.framework_score * 100).toFixed(0)}%
-            </p>
-          </div>
-          <div>
-            <span className="text-[#4A6741]">{t.ending.leniency}</span>
-            <p className="text-[#1A2E1A]">
-              {(profile.leniency_score * 100).toFixed(0)}%
-            </p>
-          </div>
-          <div>
-            <span className="text-[#4A6741]">{t.ending.empathy}</span>
-            <p className="text-[#1A2E1A]">
-              {(profile.empathy_score * 100).toFixed(0)}%
-            </p>
-          </div>
-          <div>
-            <span className="text-[#4A6741]">{t.ending.consistency}</span>
-            <p className="text-[#1A2E1A]">
-              {(profile.consistency_score * 100).toFixed(0)}%
-            </p>
-          </div>
+        <div className="mb-6 space-y-3">
+          <StatGauge label={t.ending.framework} value={profile.framework_score} delay={0} />
+          <StatGauge label={t.ending.leniency} value={profile.leniency_score} delay={150} />
+          <StatGauge label={t.ending.empathy} value={profile.empathy_score} delay={300} />
+          <StatGauge label={t.ending.consistency} value={profile.consistency_score} delay={450} />
         </div>
 
         <p className="mb-4 text-xs text-[#4A6741]">

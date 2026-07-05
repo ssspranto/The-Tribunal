@@ -25,7 +25,8 @@ export const EN = {
     reasoningLabel: "Your reasoning — Elias will remember this",
     reasoningPlaceholder: "Why did you decide this way?",
     submitButton: "Submit ruling",
-    submitting: "Recording your ruling..."
+    submitting: "Recording your ruling...",
+    expertLabel: "Expert system recommends"
   },
 
   // Transition screen
@@ -46,13 +47,13 @@ export const EN = {
   // Loading screen
   loading: {
     messages: [
-      "The court is reviewing the case...",
-      "Elias waits.",
-      "The record is being examined...",
-      "Judgment is being prepared...",
+      "The court chambers fall silent...",
+      "Elias waits in the holding cell...",
+      "The gavel hangs in the air...",
+      "The evidence is weighed once more...",
       "The court reporter reviews the transcript...",
-      "The record is complete.",
-      "Ten cases. Ten judgments.",
+      "The record of Elias Voss grows heavy.",
+      "Ten cases. Ten judgments. One truth.",
       "The court will now deliver its verdict — on everyone."
     ]
   },

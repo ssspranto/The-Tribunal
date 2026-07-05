@@ -11,23 +11,13 @@ import { useLanguage } from "./context/LanguageContext";
 import { useGameState, buildHistory, getSpeedrunCase } from "./hooks/useGameState";
 import {
   getAvatarExpression,
-  getTimePassage,
 } from "./hooks/useProfileTracker";
 import { SCENARIO_BANKS } from "./data/scenarioBanks";
 import { SCENARIO_BANKS_BN } from "./data/scenarioBanksBN";
 import { generateFinalCases } from "./api/generateFinalCases";
 import { generateEndings } from "./api/generateEndings";
-
-const selectScenario = (verdict, severity, caseBank) => {
-  const normalizedVerdict = verdict === "not_guilty" ? "not guilty" : verdict;
-  if (normalizedVerdict === "not guilty") {
-    const index = Math.floor((10 - 1) * (1 - (severity / 10)));
-    return caseBank[Math.min(index, 4)];
-  }
-
-  const index = Math.floor((severity / 10) * 9);
-  return caseBank[Math.max(index, 5)];
-};
+import { forwardChain, buildWorkingMemory, formatTrace } from "./expert";
+import { knowledgeBase } from "./expert/knowledgeBase";
 
 function SavePrompt({ onContinue, onStartOver }) {
   const { t } = useLanguage();
@@ -112,20 +102,29 @@ export default function App() {
   const getScenarioBank = useCallback((lang) => 
     lang === "bn" ? SCENARIO_BANKS_BN : SCENARIO_BANKS, []);
 
-  const getNextCase = useCallback((caseNumber, lastVerdict, lastSeverity) => {
-    if (caseNumber === 1) return null;
-    if (caseNumber >= 9) return null;
-    const bank = getScenarioBank(language)[caseNumber];
-    return selectScenario(lastVerdict, lastSeverity, bank);
-  }, [language, getScenarioBank]);
-
   const [error, setError] = useState(null);
   const [errorTitle, setErrorTitle] = useState(null);
   const [errorIsQuota, setErrorIsQuota] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [loadingSubtitle, setLoadingSubtitle] = useState(null);
   const [pendingAction, setPendingAction] = useState(null);
+  const [expertTrace, setExpertTrace] = useState(null);
+  const [logMessages, setLogMessages] = useState([]);
+  const addLog = useCallback((msg) => {
+    const time = new Date().toLocaleTimeString("en-US", { hour12: false });
+    setLogMessages((prev) => [...prev, `[${time}] ${msg}`]);
+  }, []);
   const apiRunning = useRef(false);
+
+  const expertRecommendation = useMemo(() => {
+    if (state.currentCaseIndex === 0) return null;
+    const cCase = state.cases[state.currentCaseIndex];
+    if (state.phase !== "case" || !cCase) return null;
+    const memory = buildWorkingMemory(state.profile, state.verdicts, cCase);
+    const { conclusions } = forwardChain(memory, knowledgeBase);
+    if (!conclusions.severityRange) return null;
+    return `severity ${conclusions.severityRange[0]}-${conclusions.severityRange[1]}`;
+  }, [state.phase, state.profile, state.verdicts, state.cases, state.currentCaseIndex]);
 
   useEffect(() => {
     if (!initialized) return;
@@ -139,6 +138,7 @@ export default function App() {
       if (apiRunning.current) return;
       apiRunning.current = true;
       setError(null);
+      setLogMessages([]);
       setLoadingSubtitle(subtitle ?? null);
       setPhase("loading");
 
@@ -184,12 +184,30 @@ export default function App() {
           state.verdicts.reduce((s, v) => s + (v.timeTaken ?? 0), 0) /
           state.verdicts.length /
           1000;
+
+        const fullMemory = buildWorkingMemory(
+          state.profile,
+          state.verdicts,
+          null
+        );
+        addLog("Running expert system inference...");
+        const { conclusions, trace } = forwardChain(fullMemory, knowledgeBase);
+        setExpertTrace(trace);
+        addLog(`Expert system done: outcome="${conclusions.outcome_tag}", feeling="${conclusions.feeling_tag}", archetype="${conclusions.archetype}"`);
+
+        const archetypeId = conclusions.archetype ?? "principledPragmatist";
+        const archetypeData = t.archetypes[archetypeId] ?? t.archetypes.principledPragmatist;
+
         const endings = await generateEndings(
           buildHistory(state.cases, state.verdicts),
           state.profile,
           reasonings,
           avgDecisionTime,
-          language
+          language,
+          conclusions.outcome_tag ?? "tragedy",
+          conclusions.feeling_tag ?? "reflection",
+          archetypeData,
+          addLog
         );
         setEndings(endings);
       });
@@ -203,7 +221,8 @@ export default function App() {
         const result = await generateFinalCases(
           buildHistory(state.cases, state.verdicts),
           state.profile,
-          language
+          language,
+          addLog
         );
         addFinalCases(result.case_9, result.case_10);
       });
@@ -217,12 +236,26 @@ export default function App() {
     }
 
     if (!state.speedrunMode && nextCaseNumber <= 8) {
-      const caseData = getNextCase(
-        nextCaseNumber,
-        lastVerdict.verdict,
-        lastVerdict.severity ?? 0
-      );
-      addCase(caseData);
+      const banks = getScenarioBank(language);
+      const bank = banks[nextCaseNumber];
+      if (bank) {
+        const memory = buildWorkingMemory(state.profile, state.verdicts, {
+          case_number: nextCaseNumber,
+          crime_tag: bank[0]?.crime_tag ?? "",
+          emotional_state: bank[0]?.emotional_state ?? "",
+          signal_weights: { framework: 0, leniency: 0, empathy: 0 },
+        });
+        const { conclusions } = forwardChain(memory, knowledgeBase);
+        addLog(`Expert system selected case ${nextCaseNumber} from bank range ${JSON.stringify(conclusions.bankIndexRange)}`);
+        const range = conclusions.bankIndexRange ?? [0, bank.length - 1];
+        const index = Math.min(
+          Math.max(0, Math.round((range[0] + range[1]) / 2)),
+          bank.length - 1
+        );
+        addCase(bank[index]);
+      } else {
+        advanceAfterTransition();
+      }
       return;
     }
 
@@ -230,7 +263,8 @@ export default function App() {
       const result = await generateFinalCases(
         buildHistory(state.cases, state.verdicts),
         state.profile,
-        language
+        language,
+        addLog
       );
       addFinalCases(result.case_9, result.case_10);
     });
@@ -243,7 +277,6 @@ export default function App() {
     setEndings,
     getScenarioBank,
     language,
-    getNextCase,
   ]);
 
   const handleRetry = () => {
@@ -273,80 +306,84 @@ export default function App() {
 
   return (
     <div className={`min-h-screen bg-[#F5F7F5] text-[#1A2E1A] ${language === "bn" ? "lang-bn" : ""}`}>
-      {state.phase === "language_select" && (
-        <LanguageSelectScreen
-          onSelect={(lang) => selectLanguage(lang)}
-          speedrunMode={state.speedrunMode}
-          onToggleSpeedrun={setSpeedrunMode}
-        />
-      )}
+      <div key={state.phase} className="phase-fade-active">
+        {state.phase === "language_select" && (
+          <LanguageSelectScreen
+            onSelect={(lang) => selectLanguage(lang)}
+            speedrunMode={state.speedrunMode}
+            onToggleSpeedrun={setSpeedrunMode}
+          />
+        )}
 
-      {state.phase === "save_prompt" && (
-        <SavePrompt
-          onContinue={continueGame}
-          onStartOver={startNewGame}
-        />
-      )}
+        {state.phase === "save_prompt" && (
+          <SavePrompt
+            onContinue={continueGame}
+            onStartOver={startNewGame}
+          />
+        )}
 
-      {state.phase === "intro" && (
-        <IntroScreen onStart={startSession} totalCases={totalCases} />
-      )}
+        {state.phase === "intro" && (
+          <IntroScreen onStart={startSession} totalCases={totalCases} />
+        )}
 
-      {state.phase === "case" && currentCase && (
-        <div className="relative mx-auto max-w-[680px] px-5 py-8 pb-16">
-          <div className="mb-6 flex justify-end sm:absolute sm:right-5 sm:top-8 sm:mb-0">
-            <EliasAvatar
-              expression={avatarExpression}
-              emotionalState={currentCase.emotional_state}
-            />
+        {state.phase === "case" && currentCase && (
+          <div className="relative mx-auto max-w-[680px] px-5 py-8 pb-16">
+            <div className="mb-6 flex justify-end sm:absolute sm:right-5 sm:top-8 sm:mb-0">
+              <EliasAvatar
+                expression={avatarExpression}
+                emotionalState={currentCase.emotional_state}
+              />
+            </div>
+            <div className="sm:pr-28">
+              <CaseCard caseData={currentCase} caseNumber={caseNumber} totalCases={totalCases} />
+              <VerdictPanel onSubmit={submitVerdict} disabled={false} expertRecommendation={expertRecommendation} />
+            </div>
           </div>
-          <div className="sm:pr-28">
-            <CaseCard caseData={currentCase} caseNumber={caseNumber} totalCases={totalCases} />
-            <VerdictPanel onSubmit={submitVerdict} disabled={false} />
-          </div>
-        </div>
-      )}
+        )}
 
-      {state.phase === "transition" && (
-        <TransitionScreen
-          reaction={state.lastReaction}
-          timePassage={t.transition.timePassage[state.transitionCaseNumber % t.transition.timePassage.length]}
-          expression={avatarExpression}
-          emotionalState={currentCase?.emotional_state}
-          onComplete={handleTransitionComplete}
-        />
-      )}
+        {state.phase === "transition" && (
+          <TransitionScreen
+            reaction={state.lastReaction}
+            timePassage={t.transition.timePassage[state.transitionCaseNumber % t.transition.timePassage.length]}
+            expression={avatarExpression}
+            emotionalState={currentCase?.emotional_state}
+            onComplete={handleTransitionComplete}
+          />
+        )}
 
-      {state.phase === "loading" && (
-        <LoadingScreen
-          messages={
-            state.verdicts.length >= 9
-              ? t.loading.messages.slice(5)
-              : [t.loading.messages[Math.floor(Math.random() * 5)]]
-          }
-          subtitle={loadingSubtitle}
-        />
-      )}
+        {state.phase === "loading" && (
+          <LoadingScreen
+            messages={
+              state.verdicts.length >= 9
+                ? t.loading.messages.slice(5)
+                : [t.loading.messages[Math.floor(Math.random() * 5)]]
+            }
+            subtitle={loadingSubtitle}
+            logMessages={logMessages}
+          />
+        )}
 
-      {state.phase === "error" && (
-        <ErrorCard
-          title={errorTitle}
-          message={error}
-          isQuota={errorIsQuota}
-          onRetry={handleRetry}
-          isRetrying={isRetrying}
-        />
-      )}
+        {state.phase === "error" && (
+          <ErrorCard
+            title={errorTitle}
+            message={error}
+            isQuota={errorIsQuota}
+            onRetry={handleRetry}
+            isRetrying={isRetrying}
+          />
+        )}
 
-      {state.phase === "ending" && state.endings && (
-        <EndingScreen
-          endings={state.endings}
-          profile={state.profile}
-          cases={state.cases}
-          verdicts={state.verdicts}
-          onRestart={startNewGame}
-        />
-      )}
+        {state.phase === "ending" && state.endings && (
+          <EndingScreen
+            endings={state.endings}
+            profile={state.profile}
+            cases={state.cases}
+            verdicts={state.verdicts}
+            expertTrace={expertTrace}
+            onRestart={startNewGame}
+          />
+        )}
+      </div>
     </div>
   );
 }

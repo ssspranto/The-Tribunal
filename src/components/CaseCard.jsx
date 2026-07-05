@@ -25,8 +25,11 @@ export default function CaseCard({ caseData, caseNumber, totalCases }) {
         </h2>
       </div>
 
-      <div className="rounded border border-[#D4E0D4] bg-white p-5 md:p-6 shadow-sm">
-        <p className={`case-body text-[#1A2E1A] ${langClass}`}>{caseData.case_body}</p>
+      <div className="rounded border border-[#D4E0D4] bg-white shadow-sm">
+        <div className="h-1 w-full rounded-t bg-[#C4943A]" />
+        <div className="p-5 md:p-6">
+          <p className={`case-body text-[#1A2E1A] ${langClass}`}>{caseData.case_body}</p>
+        </div>
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
 import { generateWithRetry, getLanguageInstruction } from "./ai";
+import { finalCasesSchema, tolerantFinalCasesSchema } from "./schemas";
 import { fallbackCases } from "../data/fallbackCases";
 import { fallbackCasesBN } from "../data/fallbackCasesBN";
 
-export async function generateFinalCases(history, profile, language = "en") {
+export async function generateFinalCases(history, profile, language = "en", onLog) {
   const key = import.meta.env.VITE_OPENROUTER_API_KEY;
   if (!key || key === "your_openrouter_api_key_here") {
     throw new Error("API key not configured");
@@ -23,7 +24,8 @@ Judge's reasoning: ${entry.reasoning || "none given"}
     .join("\n");
 
   try {
-    return await generateWithRetry(() => `${languageInstruction}
+    if (onLog) onLog("Generating final two cases via AI...");
+    const raw = await generateWithRetry(() => `${languageInstruction}
 
 You are generating the two final and hardest cases for The Tribunal. Elias Voss has appeared before this judge ${caseCount} times.
 
@@ -45,6 +47,8 @@ These final two cases must:
 5. Case 10's verdict must feel like it will determine Elias's fate entirely
 6. Be significantly harder than all previous cases
 7. Reference specific events from Elias's history to feel earned
+8. Write the case_body as a past-tense account of an act Elias has ALREADY committed and was ALREADY caught for (caught in the act, confessed, evidence found, someone reported him). The judge rules on what happened — not on what Elias might do. Do NOT use conditional/future framing ("must decide whether to," "if he succeeds," "will be committing"). WRONG: "Elias must decide whether to break into the archive to retrieve the files." RIGHT: "Elias broke into the archive on November 9th and was apprehended when a security guard discovered him."
+9. Write in plain language — avoid unexplained legal, financial, medical, or technical terms. If a specialized term is essential, clarify it in the same sentence. WRONG: "A technicality in the chain of custody suppressed the evidence." RIGHT: "A mistake in how the evidence was handled meant it couldn't be used in court." Moral and emotional complexity should remain high; vocabulary and procedural assumptions should not be a barrier. This applies to case_body, bridge_narrative, and elias_reaction.
 
 Return ONLY this JSON:
 {
@@ -66,8 +70,22 @@ Return ONLY this JSON:
     "elias_reaction": "...",
     "signal_weights": { "framework": 0.1, "leniency": -0.2, "empathy": 0.3 }
   }
-}`);
+  }`, 2, onLog);
+    try {
+      if (onLog) onLog("AI response received, validating...");
+      return finalCasesSchema.parse(raw);
+    } catch (strictError) {
+      const tolerant = tolerantFinalCasesSchema.safeParse(raw);
+      if (tolerant.success) {
+        if (onLog) onLog("AI response had missing fields, filled defaults");
+        console.warn("[The Tribunal] AI response had missing fields, filled defaults:", strictError.message);
+        return tolerant.data;
+      }
+      if (onLog) onLog("Validation failed, throwing error");
+      throw strictError;
+    }
   } catch (error) {
+    if (onLog) onLog(`Failed, using fallback cases: ${error.message}`);
     console.warn("[The Tribunal] AI case generation failed, using fallback cases:", error.message);
     return language === "bn" ? fallbackCasesBN : fallbackCases;
   }

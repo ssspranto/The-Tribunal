@@ -13,10 +13,10 @@ export default function LanguageSelectScreen({ onSelect, speedrunMode, onToggleS
     <div className="mx-auto flex min-h-screen max-w-[800px] flex-col items-center justify-center px-5 py-12">
       <header className="mb-12 text-center">
         <h1 className="flex flex-col items-center gap-2">
-          <span className="font-heading text-4xl font-bold tracking-wide text-[#2D6A4F] md:text-5xl" style={{ fontFamily: "'Playfair Display', serif" }}>
+          <span className="title-reveal font-heading text-4xl font-bold tracking-wide text-[#2D6A4F] md:text-5xl" style={{ fontFamily: "'Playfair Display', serif" }}>
             The Tribunal
           </span>
-          <span className="text-3xl font-medium text-[#2D6A4F] md:text-4xl" style={{ fontFamily: "serif" }}>
+          <span className="title-reveal text-3xl font-medium text-[#2D6A4F] md:text-4xl" style={{ fontFamily: "serif", animationDelay: "200ms" }}>
             ট্রাইব্যুনাল
           </span>
         </h1>
