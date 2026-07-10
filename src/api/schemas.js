@@ -48,3 +48,16 @@ export const endingsSchema = z.object({
   archetype_label: z.string(),
   archetype_description: z.string(),
 });
+
+export const tolerantEndingsSchema = z.object({
+  elias_ending: z.object({
+    paragraphs: z.array(z.string()).min(1).max(6).catch(["The verdict was delivered."]),
+    outcome_tag: z.string().catch("unknown"),
+  }),
+  judge_ending: z.object({
+    paragraphs: z.array(z.string()).min(1).max(5).catch(["The judge reflected on the case."]),
+    feeling_tag: z.string().catch("unknown"),
+  }),
+  archetype_label: z.string().catch("Unknown"),
+  archetype_description: z.string().catch("Unknown"),
+});

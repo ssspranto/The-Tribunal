@@ -58,12 +58,12 @@ function ErrorCard({ title, message, isQuota, onRetry, isRetrying }) {
         {isQuota && (
           <p className="mb-6 text-xs text-[#4A6741]/80">
             <a
-              href="https://aistudio.google.com/apikey"
+              href="https://openrouter.ai/keys"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#2D6A4F] underline underline-offset-2 hover:text-[#52B788]"
             >
-              Check your API key and usage in Google AI Studio
+              {t.errors.apiKeyHelp}
             </a>
           </p>
         )}
@@ -123,8 +123,9 @@ export default function App() {
     const memory = buildWorkingMemory(state.profile, state.verdicts, cCase);
     const { conclusions } = forwardChain(memory, knowledgeBase);
     if (!conclusions.severityRange) return null;
-    return `severity ${conclusions.severityRange[0]}-${conclusions.severityRange[1]}`;
-  }, [state.phase, state.profile, state.verdicts, state.cases, state.currentCaseIndex]);
+    const [min, max] = conclusions.severityRange;
+    return t.game.expertSeverity.replace("{min}", min).replace("{max}", max);
+  }, [state.phase, state.profile, state.verdicts, state.cases, state.currentCaseIndex, t.game.expertSeverity]);
 
   useEffect(() => {
     if (!initialized) return;

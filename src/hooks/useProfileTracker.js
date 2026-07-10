@@ -61,20 +61,3 @@ export function getAvatarExpression(caseNumber, leniencyScore) {
   if (caseNumber === 8) return "state_4";
   return leniencyScore < 0.4 ? "state_5a" : "state_5b";
 }
-
-const TIME_PASSAGE = [
-  "",
-  "Three months later...",
-  "Six months later...",
-  "Nearly a year later...",
-  "The following spring...",
-  "Eighteen months later...",
-  "Two years later...",
-  "Three years later...",
-  "Four years later...",
-  "Five years later...",
-];
-
-export function getTimePassage(caseNumber) {
-  return TIME_PASSAGE[caseNumber] ?? "Some time later...";
-}

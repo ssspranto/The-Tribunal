@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function LoadingScreen({ messages = [], subtitle, logMessages = [] }) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const langClass = language === "bn" ? "lang-bn" : "";
   const [showLog, setShowLog] = useState(false);
 
@@ -28,12 +28,12 @@ export default function LoadingScreen({ messages = [], subtitle, logMessages = [
         onClick={() => setShowLog((s) => !s)}
         className="mt-8 rounded border border-[#4A6741] px-5 py-1.5 font-mono text-sm text-[#4A6741] transition-colors hover:bg-[#4A6741] hover:text-white"
       >
-        {showLog ? "Hide Log" : "Show Log"}
+        {showLog ? t.loading.hideLog : t.loading.showLog}
       </button>
 
       {showLog && (
-        <div className="mt-4 max-h-[240px] w-full overflow-y-auto rounded bg-black/90 p-3 font-mono text-xs leading-relaxed text-green-400">
-          {logMessages.length === 0 && <span className="text-gray-500">Waiting for log messages...</span>}
+        <div className={`mt-4 max-h-[240px] w-full overflow-y-auto rounded bg-black/90 p-3 font-mono text-xs leading-relaxed text-green-400 ${langClass}`}>
+          {logMessages.length === 0 && <span className="text-gray-500">{t.loading.waitingForLog}</span>}
           {logMessages.map((msg, i) => (
             <div key={i}>{msg}</div>
           ))}

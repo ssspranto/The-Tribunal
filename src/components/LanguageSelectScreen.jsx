@@ -2,7 +2,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { LANGUAGES } from "../localization";
 
 export default function LanguageSelectScreen({ onSelect, speedrunMode, onToggleSpeedrun }) {
-  const { language: currentLang, changeLanguage } = useLanguage();
+  const { language: currentLang, changeLanguage, t } = useLanguage();
 
   const handleSelect = (code) => {
     changeLanguage(code);
@@ -79,7 +79,7 @@ export default function LanguageSelectScreen({ onSelect, speedrunMode, onToggleS
           />
         </button>
         <span className="text-sm text-[#4A6741]">
-          Speedrun Mode
+          {t.languageSelect.speedrunLabel}
         </span>
       </div>
 

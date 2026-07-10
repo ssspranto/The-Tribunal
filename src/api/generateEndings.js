@@ -1,5 +1,5 @@
 import { generateWithRetry, getLanguageInstruction } from "./ai";
-import { endingsSchema } from "./schemas";
+import { endingsSchema, tolerantEndingsSchema } from "./schemas";
 import { fallbackEndings } from "../data/fallbackEndings";
 import { fallbackEndingsBN } from "../data/fallbackEndingsBN";
 
@@ -20,7 +20,16 @@ export async function generateEndings(
   }
 
   const languageInstruction = getLanguageInstruction(language);
-  const historyJson = JSON.stringify(history, null, 2);
+  const historyText = history
+    .map(
+      (entry, i) => `Case ${i + 1} — ${entry.case_title}
+Crime: ${entry.case_body}
+Bridge: ${entry.bridge_narrative}
+Elias's state: ${entry.emotional_state}
+Verdict: ${entry.verdict ?? "none"}, Severity: ${entry.severity ?? "none"}/10
+Judge's reasoning: ${entry.reasoning || "none given"}`
+    )
+    .join("\n---\n");
   
   const reasoningText =
     reasonings.length > 0
@@ -33,7 +42,8 @@ export async function generateEndings(
 
 You are writing the endings for The Tribunal. Elias Voss has been judged 10 times.
 
-Complete case and verdict history: ${historyJson}
+Complete case and verdict history:
+${historyText}
 
 Judge's final moral profile:
 - Framework: ${profile.framework_score.toFixed(2)} (0=outcome-based, 1=rule-based)
@@ -80,7 +90,18 @@ Return ONLY this JSON:
   "archetype_description": "${archetypeData.description}"
 }`, 2, onLog);
     if (onLog) onLog("AI response received, validating endings...");
-    return endingsSchema.parse(raw);
+    try {
+      return endingsSchema.parse(raw);
+    } catch (strictError) {
+      const tolerant = tolerantEndingsSchema.safeParse(raw);
+      if (tolerant.success) {
+        if (onLog) onLog("AI response had missing fields, filled defaults");
+        console.warn("[The Tribunal] AI endings response had missing fields, filled defaults:", strictError.message);
+        return tolerant.data;
+      }
+      if (onLog) onLog("Validation failed, throwing error");
+      throw strictError;
+    }
   } catch (error) {
     if (onLog) onLog(`Failed, using fallback endings: ${error.message}`);
     console.warn("[The Tribunal] AI ending generation failed, using fallback endings:", error.message);

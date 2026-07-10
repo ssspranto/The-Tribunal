@@ -76,7 +76,7 @@ const EXPRESSIONS = {
 };
 
 export default function EliasAvatar({ expression = "state_0", emotionalState }) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const expr = EXPRESSIONS[expression] ?? EXPRESSIONS.state_0;
   const langClass = language === "bn" ? "lang-bn" : "";
 
@@ -87,7 +87,7 @@ export default function EliasAvatar({ expression = "state_0", emotionalState }) 
         width="100"
         height="86"
         className="drop-shadow-lg"
-        aria-label={`${language === "bn" ? "এলিয়াস ভস" : "Elias Voss"} — ${emotionalState ?? "present"}`}
+        aria-label={`${t.ending.eliasTitle} — ${emotionalState ?? t.avatar.present}`}
       >
         <ellipse cx="70" cy="95" rx="28" ry="8" fill="#A7D7A9" opacity="0.45" />
         <g transform={`rotate(${expr.headTilt} 70 60)`}>
@@ -113,7 +113,7 @@ export default function EliasAvatar({ expression = "state_0", emotionalState }) 
         </g>
         <rect x="52" y="94" width="36" height="18" rx="4" fill="#EAF4EA" stroke="#D4E0D4" />
         <text x="70" y="106" textAnchor="middle" fill="#4A6741" fontSize="7" fontFamily="system-ui">
-          {language === "bn" ? "এলিয়াস ভস" : "ELIAS VOSS"}
+          {t.ending.eliasTitle.toUpperCase()}
         </text>
       </svg>
       {emotionalState && (

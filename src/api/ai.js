@@ -2,7 +2,7 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "openrouter/free";
 
 export const SYSTEM_CONTEXT =
-  "You are a narrative engine for a moral consequence game. You must respond with ONLY a valid JSON object. No markdown. No backticks. No explanation. No preamble. Start your response with { and end with }.";
+  "You are a narrative engine for a moral consequence game. You must respond with ONLY a valid JSON object. No markdown. No backticks. No explanation. No preamble. Do NOT use smart/curly quotes — use only ASCII straight double quotes (\"). Start your response with { and end with }.";
 
 function extractBraceBlock(text, startPos) {
   let depth = 1;
@@ -32,20 +32,69 @@ function extractCaseBlock(text, caseKey) {
   return extractBraceBlock(text, start);
 }
 
+function replaceSmartQuotes(text) {
+  return text.replace(/[\u201C\u201D\u2018\u2019\u00AB\u00BB\u2033\u2036]/g, '"');
+}
+
+function extractOutermostJson(text) {
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) return null;
+  return text.slice(firstBrace, lastBrace + 1);
+}
+
 function parseAiJson(text) {
-  const cleaned = text.replace(/```json|```/g, "").trim();
+  let cleaned = text.replace(/```json|```/g, "").trim();
+  cleaned = replaceSmartQuotes(cleaned);
 
   try {
     return JSON.parse(cleaned);
   } catch {
+    // Try extracting outermost braces (handles preamble text)
+    const outermost = extractOutermostJson(cleaned);
+    if (outermost) {
+      try {
+        return JSON.parse(outermost);
+      } catch {
+        // Continue to more specific extraction
+      }
+    }
+
+    // Try extracting case_9 and case_10 blocks
     const case9Raw = extractCaseBlock(cleaned, "case_9");
     const case10Raw = extractCaseBlock(cleaned, "case_10");
     if (case9Raw && case10Raw) {
-      const parsed9 = JSON.parse(case9Raw);
-      const parsed10 = JSON.parse(case10Raw);
-      return { case_9: parsed9, case_10: parsed10 };
+      try {
+        const parsed9 = JSON.parse(case9Raw);
+        const parsed10 = JSON.parse(case10Raw);
+        return { case_9: parsed9, case_10: parsed10 };
+      } catch {
+        // Continue to endings extraction
+      }
     }
-    throw new Error("Could not extract case data from response");
+
+    // Try extracting endings blocks
+    const eliasRaw = extractCaseBlock(cleaned, "elias_ending");
+    const judgeRaw = extractCaseBlock(cleaned, "judge_ending");
+    if (eliasRaw && judgeRaw) {
+      try {
+        const parsedElias = JSON.parse(eliasRaw);
+        const parsedJudge = JSON.parse(judgeRaw);
+        // Try to extract archetype fields from the outermost text
+        const archetypeLabelMatch = cleaned.match(/"archetype_label"\s*:\s*"([^"]*)"/);
+        const archetypeDescMatch = cleaned.match(/"archetype_description"\s*:\s*"([^"]*)"/);
+        return {
+          elias_ending: parsedElias,
+          judge_ending: parsedJudge,
+          archetype_label: archetypeLabelMatch?.[1] ?? "Unknown",
+          archetype_description: archetypeDescMatch?.[1] ?? "Unknown",
+        };
+      } catch {
+        // Fall through to error
+      }
+    }
+
+    throw new Error("Could not extract JSON data from response");
   }
 }
 
@@ -57,7 +106,11 @@ case_body, elias_reaction, and all ending paragraph text. JSON keys must remain
 in English. Numbers remain as numerals. Do not mix languages within a single 
 field. Write naturally in Bengali — not a word-for-word translation but 
 culturally appropriate narrative prose. The tone should be serious, literary, 
-and emotionally resonant in Bengali.`;
+and emotionally resonant in Bengali.
+
+JSON FORMATTING: Use only straight ASCII double quotes (") for JSON string delimiters. 
+Do NOT use smart/curly quotes. Do not add any text, explanation, or preamble before 
+or after the JSON object. Return ONLY the raw JSON, nothing else.`;
   }
   return `Write all narrative text fields in English.`;
 };
@@ -77,7 +130,8 @@ const callOpenRouter = async (promptFn, onLog) => {
       },
     ],
     temperature: 0.7,
-    max_tokens: 2500,
+    max_tokens: 4000,
+    reasoning: { exclude: true },
   };
 
   const response = await fetch(OPENROUTER_API_URL, {

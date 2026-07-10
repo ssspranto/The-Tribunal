@@ -26,7 +26,8 @@ export const EN = {
     reasoningPlaceholder: "Why did you decide this way?",
     submitButton: "Submit ruling",
     submitting: "Recording your ruling...",
-    expertLabel: "Expert system recommends"
+    expertLabel: "Expert system recommends",
+    expertSeverity: "severity {min}-{max}"
   },
 
   // Transition screen
@@ -46,6 +47,9 @@ export const EN = {
 
   // Loading screen
   loading: {
+    showLog: "Show Log",
+    hideLog: "Hide Log",
+    waitingForLog: "Waiting for log messages...",
     messages: [
       "The court chambers fall silent...",
       "Elias waits in the holding cell...",
@@ -61,7 +65,8 @@ export const EN = {
   // Verdict buttons
   verdict: {
     guilty: "Guilty",
-    notGuilty: "Not Guilty"
+    notGuilty: "Not Guilty",
+    severitySuffix: "/10"
   },
 
   // Ending screen
@@ -86,7 +91,9 @@ export const EN = {
     leniency: "Leniency",
     empathy: "Empathy",
     consistency: "Consistency",
-    perCase: "per case"
+    perCase: "per case",
+    expertTitle: "Expert System Judgment Analysis",
+    expertDescription: "A forward-chaining production rule engine determined these outcomes based on your {count} fired rules."
   },
 
   // Session restore
@@ -102,13 +109,24 @@ export const EN = {
     apiError: "The court reporter encountered an error.",
     retrying: "Reviewing the transcript again...",
     tryAgain: "Try again",
-    parseError: "The record could not be read. Please try again."
+    parseError: "The record could not be read. Please try again.",
+    apiKeyHelp: "Check your API key and usage on OpenRouter"
   },
 
   // Case tags (used in case pills)
   caseTags: {
     contradiction: "Contradiction",
     finalCase: "Final Case"
+  },
+
+  // Language select screen
+  languageSelect: {
+    speedrunLabel: "Speedrun Mode"
+  },
+
+  // Avatar
+  avatar: {
+    present: "present"
   },
 
   // Archetype names and descriptions

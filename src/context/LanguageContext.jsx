@@ -12,7 +12,8 @@ export const LanguageProvider = ({ children }) => {
 
   useEffect(() => {
     document.documentElement.lang = language;
-  }, [language]);
+    document.title = t.intro.title;
+  }, [language, t.intro.title]);
 
   const changeLanguage = (code) => {
     setLanguage(code);

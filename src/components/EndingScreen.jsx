@@ -3,8 +3,10 @@ import EliasAvatar from "./EliasAvatar";
 import { useLanguage } from "../context/LanguageContext";
 
 function StatGauge({ label, value, delay }) {
+  const { language } = useLanguage();
+  const langClass = language === "bn" ? "lang-bn" : "";
   return (
-    <div>
+    <div className={langClass}>
       <div className="mb-1 flex items-center justify-between">
         <span className="text-sm text-[#4A6741]">{label}</span>
         <span className="text-sm font-medium text-[#1A2E1A]">
@@ -22,7 +24,7 @@ function StatGauge({ label, value, delay }) {
 }
 
 function AnimatedParagraphs({ paragraphs, tag, tagLabel, side }) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [visibleCount, setVisibleCount] = useState(0);
 
   useEffect(() => {
@@ -36,7 +38,7 @@ function AnimatedParagraphs({ paragraphs, tag, tagLabel, side }) {
   return (
     <div className={`flex-1 ${side === "left" ? "md:pr-6" : "md:pl-6"} ${langClass}`}>
       <h3 className="font-heading mb-2 text-xl text-[#2D6A4F]">
-        {side === "left" ? (language === "bn" ? "এলিয়াস ভস" : "Elias Voss") : (language === "bn" ? "বিচারক" : "The Judge")}
+        {side === "left" ? t.ending.eliasTitle : t.ending.judgeTitle}
       </h3>
       {tag && (
         <span className="mb-4 inline-block text-xs uppercase tracking-[0.2em] text-[#4A6741]">
@@ -61,25 +63,27 @@ function AnimatedParagraphs({ paragraphs, tag, tagLabel, side }) {
 
 function ExpertTraceSection({ trace }) {
   const [expanded, setExpanded] = useState(false);
+  const { language, t } = useLanguage();
+  const langClass = language === "bn" ? "lang-bn" : "";
 
   if (!trace || trace.length === 0) return null;
 
   return (
-    <div className="mt-16 rounded border border-[#C4943A]/30 bg-white p-6 md:p-8 shadow-sm">
+    <div className={`mt-16 rounded border border-[#C4943A]/30 bg-white p-6 md:p-8 shadow-sm ${langClass}`}>
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between text-left"
       >
         <h3 className="font-heading text-xl text-[#C4943A]">
-          Expert System Judgment Analysis
+          {t.ending.expertTitle}
         </h3>
         <span className="text-sm text-[#4A6741]">
           {expanded ? "▲" : "▼"}
         </span>
       </button>
       <p className="mb-4 mt-2 text-xs italic text-[#4A6741]">
-        A forward-chaining production rule engine determined these outcomes based on your {trace.length} fired rules.
+        {t.ending.expertDescription.replace("{count}", trace.length)}
       </p>
       {expanded && (
         <div className="space-y-3 border-t border-[#D4E0D4] pt-4">
@@ -112,6 +116,7 @@ export default function EndingScreen({
   onRestart,
 }) {
   const { language, t } = useLanguage();
+  const severitySuffix = t.verdict.severitySuffix ?? "/10";
   
   const archetypeLabel = endings.archetype_label;
   const archetypeDescription = endings.archetype_description;
@@ -194,7 +199,7 @@ export default function EndingScreen({
               <span className="text-[#4A6741]">—</span>
               <span className="text-[#1A2E1A]">
                 {verdicts[i]?.verdict === "guilty"
-                  ? `${t.verdict.guilty} (${verdicts[i].severity}/10)`
+                  ? `${t.verdict.guilty} (${verdicts[i].severity}${severitySuffix})`
                   : verdicts[i]?.verdict === "not_guilty"
                     ? t.verdict.notGuilty
                     : "—"}
